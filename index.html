@@ -11,23 +11,36 @@
       margin: 0;
       display: flex;
       height: 100vh;
+      overflow: hidden;
     }
     #sidebar {
       width: 20%;
       background-color: #2e2e2e;
       padding: 20px;
       box-sizing: border-box;
+      overflow-y: auto;
     }
     #cli-container {
       width: 80%;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+    }
+    #cli-output-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
     }
     #cli {
-      flex: 1;
       padding: 20px;
-      overflow-y: auto;
       white-space: pre-wrap;
+      overflow-y: auto;
+      flex: 1;
+    }
+    #input-wrapper {
+      display: flex;
+      border-top: 1px solid #444;
     }
     #input {
       width: 100%;
@@ -43,19 +56,34 @@
     h3 {
       margin-top: 0;
     }
+    button {
+      margin: 5px 0;
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
+  <div id="cli-container">
+    <div id="cli-output-wrapper">
+      <div id="cli"></div>
+    </div>
+    <div id="input-wrapper">
+      <input id="input" type="text" placeholder="Type a command...">
+    </div>
+  </div>
+
   <div id="sidebar">
     <h3>Resources</h3>
     <div id="resources"></div>
     <h3>Upgrades</h3>
     <div id="upgrades"></div>
-  </div>
-
-  <div id="cli-container">
-    <div id="cli"></div>
-    <input id="input" type="text" placeholder="Type a command...">
+    <h3>Prestige</h3>
+    <button onclick="prestige()">Prestige (Reset for boost)</button>
   </div>
 
   <script>
@@ -63,13 +91,19 @@
     const input = document.getElementById('input');
     const resourcesDisplay = document.getElementById('resources');
     const upgradesDisplay = document.getElementById('upgrades');
+    const cliOutputWrapper = document.getElementById('cli-output-wrapper');
 
     let gameState = JSON.parse(localStorage.getItem('idleCliGameState')) || {
       wood: 0,
+      stone: 0,
       tick: 0,
       woodPerTick: 1,
+      stonePerTick: 0,
+      prestigePoints: 0,
       upgrades: {
-        axe: false
+        axe: false,
+        sawmill: false,
+        quarry: false
       }
     };
 
@@ -85,21 +119,56 @@
             gameState.upgrades.axe = true;
             output("Upgrade purchased: Axe");
             updateSidebar();
-          } else {
-            output("Cannot purchase upgrade.");
+          }
+        }
+      },
+      sawmill: {
+        name: "Sawmill (Triple wood gain)",
+        cost: 100,
+        purchased: () => gameState.upgrades.sawmill,
+        purchase: () => {
+          if (gameState.wood >= 100 && !gameState.upgrades.sawmill) {
+            gameState.wood -= 100;
+            gameState.woodPerTick *= 3;
+            gameState.upgrades.sawmill = true;
+            output("Upgrade purchased: Sawmill");
+            updateSidebar();
+          }
+        }
+      },
+      quarry: {
+        name: "Quarry (Gain stone)",
+        cost: 50,
+        purchased: () => gameState.upgrades.quarry,
+        purchase: () => {
+          if (gameState.wood >= 50 && !gameState.upgrades.quarry) {
+            gameState.wood -= 50;
+            gameState.stonePerTick = 1;
+            gameState.upgrades.quarry = true;
+            output("Upgrade purchased: Quarry");
+            updateSidebar();
           }
         }
       }
     };
 
     const commands = {
-      help: () => "Available commands: help, gather, status, save, load, buy [upgrade]",
+      help: () => "Available commands: help, gather, mine, status, save, load, buy [upgrade], prestige",
       gather: () => {
         gameState.wood++;
         updateSidebar();
         return `You gathered 1 wood. Total wood: ${gameState.wood}`;
       },
-      status: () => `Wood: ${gameState.wood}\nTicks: ${gameState.tick}`,
+      mine: () => {
+        if (gameState.upgrades.quarry) {
+          gameState.stone++;
+          updateSidebar();
+          return `You mined 1 stone. Total stone: ${gameState.stone}`;
+        } else {
+          return "You need a Quarry to mine stone.";
+        }
+      },
+      status: () => `Wood: ${gameState.wood}\nStone: ${gameState.stone}\nTicks: ${gameState.tick}\nPrestige Points: ${gameState.prestigePoints}`,
       save: () => {
         localStorage.setItem('idleCliGameState', JSON.stringify(gameState));
         return "Game saved.";
@@ -116,11 +185,12 @@
         } else {
           return "Unknown upgrade.";
         }
-      }
+      },
+      prestige: () => prestige()
     };
 
     function updateSidebar() {
-      resourcesDisplay.innerText = `Wood: ${gameState.wood}\nWood per tick: ${gameState.woodPerTick}`;
+      resourcesDisplay.innerText = `Wood: ${gameState.wood}\nStone: ${gameState.stone}\nWood/tick: ${gameState.woodPerTick}\nStone/tick: ${gameState.stonePerTick}\nPrestige: ${gameState.prestigePoints}`;
       upgradesDisplay.innerHTML = '';
       for (const key in upgrades) {
         const upg = upgrades[key];
@@ -137,7 +207,30 @@
 
     function output(text) {
       cli.innerText += `\n> ${input.value}\n${text}\n`;
-      cli.scrollTop = cli.scrollHeight;
+      cliOutputWrapper.scrollTop = cliOutputWrapper.scrollHeight;
+    }
+
+    function prestige() {
+      if (gameState.wood >= 1000) {
+        const gain = Math.floor(gameState.wood / 1000);
+        gameState = {
+          wood: 0,
+          stone: 0,
+          tick: 0,
+          woodPerTick: 1 + gain,
+          stonePerTick: 0,
+          prestigePoints: gameState.prestigePoints + gain,
+          upgrades: {
+            axe: false,
+            sawmill: false,
+            quarry: false
+          }
+        };
+        output(`You prestiged and gained ${gain} prestige point(s)!`);
+        updateSidebar();
+      } else {
+        output("You need at least 1000 wood to prestige.");
+      }
     }
 
     input.addEventListener('keydown', e => {
@@ -155,11 +248,11 @@
     setInterval(() => {
       gameState.tick++;
       gameState.wood += gameState.woodPerTick;
+      gameState.stone += gameState.stonePerTick;
       updateSidebar();
-      output("Idle wood gathered. Total wood: " + gameState.wood);
+      output(`Idle gain: +${gameState.woodPerTick} wood` + (gameState.stonePerTick ? `, +${gameState.stonePerTick} stone` : ''));
     }, 5000);
 
-    // Initial render
     updateSidebar();
   </script>
 </body>
