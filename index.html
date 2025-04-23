@@ -110,6 +110,9 @@
       <div id="cli-output-wrapper">
         <div id="cli"></div>
       </div>
+      <div id="cli-input-wrapper">
+        <input id="cli-input" type="text" placeholder="Type command here..." onkeydown="handleCommand(event)">
+      </div>
     </div>
 
     <!-- Right Panel: Split into Game Updates, Settings, and Sidebar -->
@@ -145,8 +148,17 @@
             <button onclick="prestige()">Prestige</button>
           </div>
         </div>
+        <h4>Resources</h4>
+        <div id="resource-counts">
+          <div>Axe: <span id="axe-count">0</span></div>
+          <div>Saw: <span id="saw-count">0</span></div>
+          <div>Pickaxe: <span id="pickaxe-count">0</span></div>
+          <div>Drill: <span id="drill-count">0</span></div>
+        </div>
       </div>
     </div>
+  </div>
+
   <script>
     let resources = {
       axe: 0,
@@ -179,6 +191,10 @@
         output += `${resource.charAt(0).toUpperCase() + resource.slice(1)}: ${resources[resource]}\n`;
       }
       document.getElementById("cli").innerText = output;
+      document.getElementById("axe-count").innerText = resources.axe;
+      document.getElementById("saw-count").innerText = resources.saw;
+      document.getElementById("pickaxe-count").innerText = resources.pickaxe;
+      document.getElementById("drill-count").innerText = resources.drill;
     }
 
     function updateUpgrades() {
@@ -222,6 +238,29 @@
     function toggleDropdown(id) {
       const dropdown = document.getElementById(id);
       dropdown.classList.toggle('active');
+    }
+
+    function handleCommand(event) {
+      if (event.key === "Enter") {
+        const command = document.getElementById("cli-input").value.trim();
+        document.getElementById("cli-input").value = '';
+        logGameUpdate(`> ${command}`);
+
+        // Example command processing (expand as needed)
+        if (command === "gather") {
+          resources.axe += 1;
+          resources.saw += 1;
+          updateUI();
+          logGameUpdate("Resources gathered!");
+        } else if (command === "mine") {
+          resources.pickaxe += 1;
+          resources.drill += 1;
+          updateUI();
+          logGameUpdate("Resources mined!");
+        } else {
+          logGameUpdate(`Unknown command: ${command}`);
+        }
+      }
     }
 
     document.getElementById("theme-select").addEventListener("change", function () {
