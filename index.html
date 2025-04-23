@@ -18,33 +18,7 @@
       flex: 1;
       overflow: hidden;
     }
-    .panel {
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      width: 25%;
-      padding: 20px;
-      background-color: #2e2e2e;
-      box-sizing: border-box;
-    }
-    .panel h3 {
-      margin-top: 0;
-    }
-    .panel button {
-      margin: 5px 0;
-      background-color: #444;
-      color: white;
-      border: none;
-      padding: 8px;
-      cursor: pointer;
-      width: 100%;
-    }
-    .panel select {
-      margin: 10px 0;
-      width: 100%;
-      background-color: #444;
-      color: white;
-    }
+    /* Left Panel (Command Line) */
     #cli-container {
       width: 50%;
       display: flex;
@@ -74,12 +48,37 @@
       flex: 1;
       outline: none;
     }
-    .panel-content {
-      display: none;
+    /* Right Panel */
+    #right-panel {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .panel.active .panel-content {
-      display: block;
+    /* Top Half of Right Panel (Game Updates + Settings) */
+    #top-right-panel {
+      display: flex;
+      height: 50%;
     }
+    .top-right-panel-section {
+      width: 50%;
+      padding: 20px;
+      background-color: #2e2e2e;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    #game-updates {
+      white-space: pre-wrap;
+    }
+    /* Bottom Half of Right Panel (Sidebar) */
+    #sidebar {
+      flex: 1;
+      background-color: #2e2e2e;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    /* Dropdown and Buttons in Sidebar */
     .dropdown-content {
       display: none;
       padding-left: 20px;
@@ -87,23 +86,55 @@
     .dropdown.active .dropdown-content {
       display: block;
     }
+    button {
+      background-color: #444;
+      color: white;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+    select, label {
+      margin: 10px 0;
+      width: 100%;
+      background-color: #444;
+      color: white;
+    }
   </style>
 </head>
 <body>
   <div id="container">
-    <div class="panel" id="settings-panel">
-      <h3>Settings</h3>
-      <div class="panel-content">
-        <label for="theme-select">Theme</label>
-        <select id="theme-select">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
-        </select>
+    <!-- Left Panel: Command Line -->
+    <div id="cli-container">
+      <h3>Command Line</h3>
+      <div id="cli-output-wrapper">
+        <div id="cli"></div>
       </div>
     </div>
-    <div class="panel" id="sidebar">
-      <h3>Sidebar</h3>
-      <div class="panel-content">
+
+    <!-- Right Panel: Split into Game Updates, Settings, and Sidebar -->
+    <div id="right-panel">
+      <!-- Top Right Panel (Game Updates + Settings) -->
+      <div id="top-right-panel" style="display: flex; height: 50%;">
+        <!-- Game Updates Section -->
+        <div class="top-right-panel-section" id="game-updates-panel">
+          <h3>Game Updates</h3>
+          <div id="game-updates"></div>
+        </div>
+        <!-- Settings Section -->
+        <div class="top-right-panel-section" id="settings-panel">
+          <h3>Settings</h3>
+          <label for="theme-select">Theme</label>
+          <select id="theme-select">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Bottom Right Panel (Sidebar) -->
+      <div id="sidebar">
+        <h3>Sidebar</h3>
         <div class="dropdown" id="upgrades-dropdown">
           <button onclick="toggleDropdown('upgrades-dropdown')">Upgrades</button>
           <div class="dropdown-content" id="upgrades"></div>
@@ -116,17 +147,6 @@
         </div>
       </div>
     </div>
-    <div class="panel" id="cli-container">
-      <h3>Command Line</h3>
-      <div id="cli-output-wrapper">
-        <div id="cli"></div>
-      </div>
-    </div>
-    <div class="panel" id="game-updates-panel">
-      <h3>Game Updates</h3>
-      <div class="panel-content" id="game-updates"></div>
-    </div>
-  </div>
   <script>
     let resources = {
       axe: 0,
