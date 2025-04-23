@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Idle CLI Game</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      font-family: monospace;
+      margin: 0;
+      padding: 0;
+    }
+    #cli {
+      padding: 20px;
+      height: 90vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    #input {
+      width: 100%;
+      border: none;
+      padding: 10px;
+      font-size: 1em;
+      font-family: monospace;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+      outline: none;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div id="cli"></div>
+  <input id="input" type="text" placeholder="Type a command...">
+
+  <script>
+    const cli = document.getElementById('cli');
+    const input = document.getElementById('input');
+
+    let gameState = {
+      wood: 0,
+      tick: 0
+    };
+
+    const commands = {
+      help: () => "Available commands: help, gather, status",
+      gather: () => {
+        gameState.wood++;
+        return `You gathered 1 wood. Total wood: ${gameState.wood}`;
+      },
+      status: () => `Wood: ${gameState.wood}\nTicks: ${gameState.tick}`
+    };
+
+    function output(text) {
+      cli.innerText += `\n> ${input.value}\n${text}\n`;
+      cli.scrollTop = cli.scrollHeight;
+    }
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const command = input.value.trim().toLowerCase();
+        input.value = '';
+        const response = commands[command] ? commands[command]() : "Unknown command.";
+        output(response);
+      }
+    });
+
+    // Incremental idle mechanic
+    setInterval(() => {
+      gameState.tick++;
+      if (gameState.tick % 5 === 0) {
+        gameState.wood++;
+        output("Idle wood gathered. Total wood: " + gameState.wood);
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
