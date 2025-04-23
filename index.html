@@ -9,11 +9,23 @@
       color: #d4d4d4;
       font-family: monospace;
       margin: 0;
-      padding: 0;
+      display: flex;
+      height: 100vh;
+    }
+    #sidebar {
+      width: 20%;
+      background-color: #2e2e2e;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    #cli-container {
+      width: 80%;
+      display: flex;
+      flex-direction: column;
     }
     #cli {
+      flex: 1;
       padding: 20px;
-      height: 90vh;
       overflow-y: auto;
       white-space: pre-wrap;
     }
@@ -28,29 +40,100 @@
       outline: none;
       box-sizing: border-box;
     }
+    h3 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
-  <div id="cli"></div>
-  <input id="input" type="text" placeholder="Type a command...">
+  <div id="sidebar">
+    <h3>Resources</h3>
+    <div id="resources"></div>
+    <h3>Upgrades</h3>
+    <div id="upgrades"></div>
+  </div>
+
+  <div id="cli-container">
+    <div id="cli"></div>
+    <input id="input" type="text" placeholder="Type a command...">
+  </div>
 
   <script>
     const cli = document.getElementById('cli');
     const input = document.getElementById('input');
+    const resourcesDisplay = document.getElementById('resources');
+    const upgradesDisplay = document.getElementById('upgrades');
 
-    let gameState = {
+    let gameState = JSON.parse(localStorage.getItem('idleCliGameState')) || {
       wood: 0,
-      tick: 0
+      tick: 0,
+      woodPerTick: 1,
+      upgrades: {
+        axe: false
+      }
+    };
+
+    const upgrades = {
+      axe: {
+        name: "Axe (Double wood gain)",
+        cost: 10,
+        purchased: () => gameState.upgrades.axe,
+        purchase: () => {
+          if (gameState.wood >= 10 && !gameState.upgrades.axe) {
+            gameState.wood -= 10;
+            gameState.woodPerTick *= 2;
+            gameState.upgrades.axe = true;
+            output("Upgrade purchased: Axe");
+            updateSidebar();
+          } else {
+            output("Cannot purchase upgrade.");
+          }
+        }
+      }
     };
 
     const commands = {
-      help: () => "Available commands: help, gather, status",
+      help: () => "Available commands: help, gather, status, save, load, buy [upgrade]",
       gather: () => {
         gameState.wood++;
+        updateSidebar();
         return `You gathered 1 wood. Total wood: ${gameState.wood}`;
       },
-      status: () => `Wood: ${gameState.wood}\nTicks: ${gameState.tick}`
+      status: () => `Wood: ${gameState.wood}\nTicks: ${gameState.tick}`,
+      save: () => {
+        localStorage.setItem('idleCliGameState', JSON.stringify(gameState));
+        return "Game saved.";
+      },
+      load: () => {
+        gameState = JSON.parse(localStorage.getItem('idleCliGameState')) || gameState;
+        updateSidebar();
+        return "Game loaded.";
+      },
+      buy: (args) => {
+        const upgradeName = args[0];
+        if (upgrades[upgradeName]) {
+          upgrades[upgradeName].purchase();
+        } else {
+          return "Unknown upgrade.";
+        }
+      }
     };
+
+    function updateSidebar() {
+      resourcesDisplay.innerText = `Wood: ${gameState.wood}\nWood per tick: ${gameState.woodPerTick}`;
+      upgradesDisplay.innerHTML = '';
+      for (const key in upgrades) {
+        const upg = upgrades[key];
+        if (!upg.purchased()) {
+          const btn = document.createElement('button');
+          btn.textContent = `${upg.name} (Cost: ${upg.cost})`;
+          btn.onclick = () => {
+            upg.purchase();
+          };
+          upgradesDisplay.appendChild(btn);
+        }
+      }
+    }
 
     function output(text) {
       cli.innerText += `\n> ${input.value}\n${text}\n`;
@@ -59,21 +142,25 @@
 
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const command = input.value.trim().toLowerCase();
+        const inputParts = input.value.trim().toLowerCase().split(' ');
+        const command = inputParts[0];
+        const args = inputParts.slice(1);
         input.value = '';
-        const response = commands[command] ? commands[command]() : "Unknown command.";
-        output(response);
+        const response = commands[command] ? commands[command](args) : "Unknown command.";
+        if (response) output(response);
       }
     });
 
     // Incremental idle mechanic
     setInterval(() => {
       gameState.tick++;
-      if (gameState.tick % 5 === 0) {
-        gameState.wood++;
-        output("Idle wood gathered. Total wood: " + gameState.wood);
-      }
-    }, 1000);
+      gameState.wood += gameState.woodPerTick;
+      updateSidebar();
+      output("Idle wood gathered. Total wood: " + gameState.wood);
+    }, 5000);
+
+    // Initial render
+    updateSidebar();
   </script>
 </body>
 </html>
